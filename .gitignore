@@ -3,6 +3,9 @@
 *.a
 *.so
 
+# binary
+webterm
+
 # Folders
 _obj
 _test
