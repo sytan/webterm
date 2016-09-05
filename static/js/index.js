@@ -23,6 +23,15 @@ window.onload = function () {
           appendLog(item);
       };
       conn.onmessage = function (evt) {
+        var obj=JSON.parse(evt.data);
+        obj = JSON.parse(obj);
+        var sltObj = document.getElementById("my-select"); //get select object
+        for (x in obj) {
+            var optionObj = document.createElement("option"); //create option object
+            optionObj.value = obj[x];
+            optionObj.innerHTML = obj[x];
+            sltObj.appendChild(optionObj);  //添加到select
+        }
         output.appendChild(document.createTextNode(evt.data+'\n'));
           // var messages = evt.data.split('\n');
           // for (var i = 0; i < messages.length; i++) {
@@ -32,6 +41,7 @@ window.onload = function () {
           // }
       };
       conn.onerror = function(evt) {
+        alert("i'm error");
         alert(evt.data);
       };
   } else {

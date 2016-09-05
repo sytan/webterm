@@ -29,6 +29,8 @@
           <button type="submit" class="btn btn-default">Submit</button>
         </div>
       </form>
+      <select id="my-select" class="form-control">
+      </select>
     </div><!-- /.container -->
 
 
