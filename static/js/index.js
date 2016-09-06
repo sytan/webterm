@@ -1,18 +1,23 @@
 window.onload = function () {
   var conn;
-  var msg = document.getElementById("input");
+  var element = document.getElementById("input");
   document.getElementById("form").onsubmit = function () {
-      if (!conn) {
-          return false;
-      }
-      if (!msg.value) {
-          return false;
-      }
-      conn.send(msg.value);
-      msg.value = "";
+    console.log(element.value);
+    if (!conn) {
       return false;
+    }
+    if (!element.value) {
+      return false;
+    }
+    var exChangeMsg = new Object();
+    exChangeMsg.Cmd = "plaintext";
+    exChangeMsg.Msg = element.value;
+    var exChangeJSON = JSON.stringify(exChangeMsg);
+    console.log(exChangeJSON);
+    conn.send(exChangeJSON);
+    return false;
   };
-  var wsServer = 'ws://'+location.host+'/ws'
+  var wsServer = 'ws://'+location.host+'/ws';
   if (window["WebSocket"]) {
       var output = document.getElementById("output");
       conn = new WebSocket(wsServer);
@@ -23,16 +28,23 @@ window.onload = function () {
           appendLog(item);
       };
       conn.onmessage = function (evt) {
-        var obj=JSON.parse(evt.data);
-        obj = JSON.parse(obj);
-        var sltObj = document.getElementById("my-select"); //get select object
-        for (x in obj) {
-            var optionObj = document.createElement("option"); //create option object
-            optionObj.value = obj[x];
-            optionObj.innerHTML = obj[x];
-            sltObj.appendChild(optionObj);  //添加到select
+        console.log(evt.data);
+        var obj = evt.data;
+        while (typeof(obj) != "object"){
+           obj = JSON.parse(obj);
         }
-        output.appendChild(document.createTextNode(evt.data+'\n'));
+        console.log(obj);
+        var sltObj = document.getElementById("my-select"); //get select object
+        if (obj.Cmd == "select") {
+          for (x in obj.Msg) {
+            var optionObj = document.createElement("option"); //create option object
+            optionObj.value = obj.Msg[x];
+            optionObj.innerHTML = obj.Msg[x];
+            sltObj.appendChild(optionObj);  //添加到select
+          }
+        }else {
+          output.appendChild(document.createTextNode(obj.Msg+'\n'));
+        }
           // var messages = evt.data.split('\n');
           // for (var i = 0; i < messages.length; i++) {
           //     var item = document.createElement("div");
@@ -45,6 +57,6 @@ window.onload = function () {
         alert(evt.data);
       };
   } else {
-      alert("i'm not support")
+      alert("i'm not support");
   }
 };

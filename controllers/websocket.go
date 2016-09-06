@@ -18,6 +18,12 @@ type WsController struct {
 	beego.Controller
 }
 
+type exChangeFormat struct {
+	Cmd string
+	Msg interface{}
+}
+
+var exChangeMsg exChangeFormat
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -27,7 +33,10 @@ var upgrader = websocket.Upgrader{
 // Get implements method Get
 func (c *WsController) Get() {
 	ports := getSerialPort()
-	portsJSON, err := json.Marshal(ports)
+	exChangeMsg.Cmd = "select"
+	exChangeMsg.Msg = ports
+
+	exChangeJSON, err := json.Marshal(exChangeMsg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,16 +46,24 @@ func (c *WsController) Get() {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(portsJSON)
-	conn.WriteJSON(string(portsJSON))
-	// conn.WriteJSON(portsJSON)
-	fmt.Println(string(portsJSON))
+	conn.WriteJSON(string(exChangeJSON))
 	for {
-		messageType, message, err := conn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
 			return
 		}
-		if err = conn.WriteMessage(messageType, message); err != nil {
+		var msgUnmarshal exChangeFormat
+		err = json.Unmarshal(message, &msgUnmarshal)
+		if err != nil {
+			fmt.Print("i'm failed to unmarshal")
+		}
+		exChangeMsg.Cmd = msgUnmarshal.Cmd
+		exChangeMsg.Msg = msgUnmarshal.Msg
+		exChangeJSON, err := json.Marshal(exChangeMsg)
+		if err != nil {
+			fmt.Println("woring format of json")
+		}
+		if err = conn.WriteJSON(string(exChangeJSON)); err != nil {
 			return
 		}
 
