@@ -22,17 +22,32 @@
       <form role="form" id="form">
         <div class="form-group">
           <label for="output">Output</label>
-          <textarea id="output" class="form-control" rows="10" disabled="true"></textarea>
+          <textarea id="output" class="form-control" rows="15" disabled="true"></textarea>
         </div>
-        <div class="form-group">
-          <input type="text" class="form-control" placeholder="command" id="input">
-          <button type="submit" class="btn btn-default">Submit</button>
-        </div>
+
+          <div class="input-group">
+              <span class="input-group-addon" id = "addon" onclick="addonSwitch()">NULL</span>
+              <input type="text" class="form-control" placeholder="command" id="input">
+            <div class="input-group-btn">
+              <!-- Button and dropdown menu -->
+              <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                <span class="caret"></span>
+                <span class="sr-only">Toggle Dropdown</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                <li><a href="#">LR</a></li>
+                <li><a href="#">CR</a></li>
+                <li><a href="#">Something else here</a></li>
+                <li class="divider"></li>
+                <li><a href="#">Separated link</a></li>
+              </ul>
+              <button type="submit" class="btn btn-default" onclick="onClickSubmit()">Submit</button>
+            </div>
+          </div><!-- /input-group -->
       </form>
-      <select id="my-select" class="form-control">
+      <select id="my-select" class="form-control" onclick="onClickSelect()">
       </select>
     </div><!-- /.container -->
-
 
     <!-- Bootstrap core JavaScript
     ================================================== -->
