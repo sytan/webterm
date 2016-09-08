@@ -26,9 +26,11 @@ func init() {
 
 // Add implements add an client
 func (cs *clientInfor) Add(remoteAddr string, conn *websocket.Conn) {
-	var c WebConn
-	c.Conn = conn
-	cs.Users[remoteAddr] = c
+	if _, ok := cs.Users[remoteAddr]; !ok {
+		var c WebConn
+		c.Conn = conn
+		cs.Users[remoteAddr] = c
+	}
 }
 
 // Delete implements delete and client
