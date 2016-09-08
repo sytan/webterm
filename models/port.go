@@ -50,7 +50,7 @@ func (s *SerInfor) Add(portName string) error {
 	config := new(serial.Config)
 	config.Name = portName
 	config.Baud = 115200
-	config.ReadTimeout = time.Millisecond * 50
+	config.ReadTimeout = time.Millisecond * 20
 	port, err := serial.OpenPort(config)
 	if err != nil {
 		return err
@@ -104,15 +104,18 @@ func getDevice() []string {
 	outStr = strings.TrimSpace(outStr)
 	devices := strings.Split(outStr, "\n")
 	return devices
+
 }
 
 // RunSerial implements all the serial operate
 func RunSerial() {
 	var exChangeData ExChange
-	var op ExChange
+	op := &Operate
 FOR:
 	for {
-		op = Operate
+		if op.Cmd == WRITEport {
+			fmt.Println("i'm writing!")
+		}
 		switch op.Cmd {
 		case QUITprogram:
 			for portName := range Sers.Ports {
@@ -145,8 +148,9 @@ FOR:
 			Clients.Broadcast(exChangeData)
 			op.Cmd = READport
 		case WRITEport:
+			fmt.Println("i'm writing: ", op.Target)
 			port := Sers.Ports[op.Target]
-			if msg, ok := op.Msg.(string); !ok {
+			if msg, ok := op.Msg.(string); ok {
 				err := port.WriteStr(msg)
 				if err != nil {
 					fmt.Println("Failed to write to port ", op.Target)
@@ -157,7 +161,7 @@ FOR:
 			for _, port := range Sers.Ports {
 				data, err := port.ReadStr()
 				if err != nil {
-					fmt.Println("read nothing from port ")
+					// fmt.Println("read nothing from port ")
 				} else {
 					if data != "" {
 						exChangeData.Cmd = READport
@@ -169,6 +173,7 @@ FOR:
 				}
 			}
 		default:
+			// fmt.Println("i'm default")
 			// To do
 		}
 		time.Sleep(time.Millisecond * 20)

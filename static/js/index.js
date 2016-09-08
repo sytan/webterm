@@ -25,7 +25,7 @@ window.onload = function () {
     onOpen();
   };
   conn.onclose = function (evt) {
-    document.getElementById("output").value = "Connection closed!"
+    document.getElementById("input").value = "Connection closed!"
   };
   conn.onerror = function(evt) {
     alert("i'm error");
@@ -56,11 +56,20 @@ window.onload = function () {
 
 function onGetDevice(device) {
   var select = document.getElementById("my-select"); //get select object
-  for (i in device) {
-    var option = document.createElement("option"); //create option object
-    option.value = device[i];
-    option.innerHTML = device[i];
-    select.appendChild(option);  // Add option to select
+  select.length=0;
+  console.log(device.length);
+  console.log(device);
+  if (device[0] == "") { //when there's no device , the value of devie is [""]
+    document.getElementById("input").value = "There is no serial port found!";
+    select.disabled = true;
+  }else{
+    select.disabled = false;
+    for (i in device) {
+      var option = document.createElement("option"); //create option object
+      option.value = device[i];
+      option.innerHTML = device[i];
+      select.appendChild(option);  // Add option to select
+    }
   }
 };
 
@@ -69,7 +78,7 @@ function onOpenPort(msg){
   if (msg != OK) {
     prompt = "Failed to open port!"
   }
-  document.getElementById("output").value = prompt;
+  document.getElementById("input").value = prompt;
 };
 
 function onWritePort(msg){
@@ -80,7 +89,7 @@ function onWritePort(msg){
 
 function onReadPort(msg){
   var output = document.getElementById("output");
-  output.appendChild(document.createTextNode(obj.Msg));
+  output.appendChild(document.createTextNode(msg));
   output.scrollTop = output.scrollHeight;
 };
 
@@ -112,16 +121,19 @@ function onOpen() {
 };
 
 function onClickSubmit() {
+  console.log("i'm submit");
   var exChangeData = new Object();
   var input = document.getElementById("input");
   var select = document.getElementById("my-select");
   exChangeData.Cmd = WRITEport;
   exChangeData.Msg = input.value+msgSuffix;
   exChangeData.Target = select.value
+  console.log("submit :",exChangeData);
   var exChangeJson = JSON.stringify(exChangeData);
   if (!conn) {
     return false;
   }
+  console.log("i'm sending");
   conn.send(exChangeJson);
 };
 
@@ -135,4 +147,10 @@ function onClickSelect() {
     return false;
   }
   conn.send(exChangeJson);
+};
+
+function onEnter(evt) {
+  if(evt.keyCode == 13) {
+    onClickSubmit()
+  }
 };

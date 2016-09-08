@@ -19,7 +19,7 @@
 
   <body>
     <div class="container">
-      <form role="form" id="form">
+      <form role="form" id="form" onsubmit="return false;"> <!-- onsubmit to avoid submit the form when enter text input -->
         <div class="form-group">
           <label for="output">Output</label>
           <textarea id="output" class="form-control" rows="15" disabled="true"></textarea>
@@ -27,7 +27,7 @@
 
           <div class="input-group">
               <span class="input-group-addon" id = "addon" onclick="addonSwitch()">NULL</span>
-              <input type="text" class="form-control" placeholder="command" id="input">
+              <input type="text" class="form-control" placeholder="command" id="input" onkeydown= "onEnter(event)">
             <div class="input-group-btn">
               <!-- Button and dropdown menu -->
               <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
@@ -41,7 +41,7 @@
                 <li class="divider"></li>
                 <li><a href="#">Separated link</a></li>
               </ul>
-              <button type="submit" class="btn btn-default" onclick="onClickSubmit()">Submit</button>
+              <button type="button" class="btn btn-default" onclick="onClickSubmit()">Submit</button>
             </div>
           </div><!-- /input-group -->
       </form>

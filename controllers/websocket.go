@@ -33,16 +33,13 @@ func (c *WsController) Get() {
 	models.Clients.Add(remoteAddr, conn)
 
 	var dataUnmarshal models.ExChange
-
 	for {
-		fmt.Print("i'm wait for message")
 		_, message, err := conn.ReadMessage()
 		if err != nil {
 			return
 		}
-		fmt.Print("there is a message")
 		json.Unmarshal(message, &dataUnmarshal)
-		fmt.Println(dataUnmarshal)
+		fmt.Println("There is a message ", dataUnmarshal.Cmd)
 		models.Operate = dataUnmarshal
 	}
 }
