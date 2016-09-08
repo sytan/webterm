@@ -46,7 +46,12 @@ window.onload = function () {
         onWritePort(exChangeData.Msg);
         break;
       case READport:
-        onReadPort(exChangeData.Msg);
+        var select = document.getElementById("my-select");
+        console.log(select.value);
+        console.log(exChangeData.Target);
+        if (select.value == exChangeData.Target) {
+          onReadPort(exChangeData.Msg);
+        }
         break;
       default:
 
