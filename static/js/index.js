@@ -1,4 +1,4 @@
-var msgSuffix = "";
+var msgSuffix = "\n";
 var conn;
 
 // Operate const for exchange
@@ -9,10 +9,12 @@ var	WRITEport   = "write"
 var	READport    = "read"
 var	GETdevice   = "device"
 var	DEFAULT     = "default"
+var READonly = "readonly"
 
 // Status const
 var	OK  = "ok"
 var	NOK = "nok"
+var OWNER = "owner"
 
 window.onload = function () {
   if (!window["WebSocket"]) {
@@ -47,8 +49,6 @@ window.onload = function () {
         break;
       case READport:
         var select = document.getElementById("my-select");
-        console.log(select.value);
-        console.log(exChangeData.Target);
         if (select.value == exChangeData.Target) {
           onReadPort(exChangeData.Msg);
         }
@@ -61,9 +61,8 @@ window.onload = function () {
 
 function onGetDevice(device) {
   var select = document.getElementById("my-select"); //get select object
+  preValue = select.value;
   select.length=0;
-  console.log(device.length);
-  console.log(device);
   if (device[0] == "") { //when there's no device , the value of devie is [""]
     document.getElementById("input").value = "There is no serial port found!";
     select.disabled = true;
@@ -75,20 +74,34 @@ function onGetDevice(device) {
       option.innerHTML = device[i];
       select.appendChild(option);  // Add option to select
     }
+
+    for(var i=0; i<select.options.length; i++) {
+      if(select.options[i].innerHTML == preValue) {
+        select.options[i].selected = true;
+        break;
+      }
+    }
   }
 };
 
 function onOpenPort(msg){
+  console.log(msg);
   var prompt = "Port is opened!"
-  if (msg != OK) {
+  if (msg == NOK) {
     prompt = "Failed to open port!"
+  }else if (msg == OWNER){
+    console.log("im owner");
+    prompt = "You get the write permission"
   }
   document.getElementById("input").value = prompt;
 };
 
 function onWritePort(msg){
-  if (msg != OK) {
-    alert("Failed to write to port!")
+  if (msg == READonly) {
+    alert("You don't have the permission to write!")
+  }
+  if (msg == NOK) {
+    alert("Failed to write!")
   }
 };
 
@@ -114,7 +127,6 @@ function addonSwitch() {
   var newindex = (index+1)%3;
   addon.innerText = arr[newindex];
   msgSuffix = suffix[arr[newindex]];
-  console.log(msgSuffix);
 };
 
 function onOpen() {

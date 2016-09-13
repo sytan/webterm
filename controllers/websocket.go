@@ -30,7 +30,13 @@ func (c *WsController) Get() {
 		return
 	}
 	remoteAddr := conn.RemoteAddr().String()
+	defer func() {
+		fmt.Println("Client disconnected :" + remoteAddr)
+		models.Clients.Delete(remoteAddr)
+		fmt.Println(len(models.Clients.Users), " users remaining")
+	}()
 	models.Clients.Add(remoteAddr, conn)
+	fmt.Println("New client :", remoteAddr, "-Total: ", len(models.Clients.Users))
 
 	var dataUnmarshal models.ExChange
 	for {
@@ -39,7 +45,9 @@ func (c *WsController) Get() {
 			return
 		}
 		json.Unmarshal(message, &dataUnmarshal)
-		fmt.Println("There is a message ", dataUnmarshal.Cmd)
+		models.Lock.Lock()
 		models.Operate = dataUnmarshal
+		models.Operate.Source = remoteAddr
+		models.Lock.Unlock()
 	}
 }

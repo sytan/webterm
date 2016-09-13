@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/tarm/serial"
@@ -19,12 +20,15 @@ const (
 	READport    = "read"
 	GETdevice   = "device"
 	DEFAULT     = "default"
+	READonly    = "readonly"
+	EVERYone    = "everyone"
 )
 
 // Status const
 const (
-	OK  = "ok"
-	NOK = "nok"
+	OK    = "ok"
+	NOK   = "nok"
+	OWNER = "owner"
 )
 
 // ExChange define the format of exchange infor over websocket
@@ -32,21 +36,23 @@ type ExChange struct {
 	Cmd    string
 	Msg    interface{}
 	Target string
+	Source string
 }
 
 // SerInfor record all serial information in a map named by port name
 type SerInfor struct {
-	Ports map[string]SerConn
+	Ports map[string]*SerConn
 }
 
 //SerConn record single serial information
 type SerConn struct {
+	Owner string
 	*serial.Config
 	*serial.Port
 }
 
 // Add implements add a new serial port
-func (s *SerInfor) Add(portName string) error {
+func (s *SerInfor) Add(portName string, owner string) error {
 	config := new(serial.Config)
 	config.Name = portName
 	config.Baud = 115200
@@ -58,7 +64,8 @@ func (s *SerInfor) Add(portName string) error {
 	var conn SerConn
 	conn.Config = config
 	conn.Port = port
-	s.Ports[portName] = conn
+	conn.Owner = owner
+	s.Ports[portName] = &conn
 
 	return err
 }
@@ -87,15 +94,22 @@ func (s *SerConn) ReadStr() (string, error) {
 	return "", err
 }
 
+func (s *SerConn) setOwner(owner string) {
+	s.Owner = owner
+}
+
 // Sers record the information of all the client
 var Sers SerInfor
 
-func init() {
-	Sers.Ports = make(map[string]SerConn)
-}
-
 // Operate record the operation to serial
 var Operate ExChange
+
+// Lock is to make written of global var in order
+var Lock sync.Mutex
+
+func init() {
+	Sers.Ports = make(map[string]*SerConn)
+}
 
 func getDevice() []string {
 	cmd := exec.Command("/bin/sh", "-c", "ls /dev/tty* |grep '/dev/ttyACM\\|/dev/ttyUSB'")
@@ -107,15 +121,17 @@ func getDevice() []string {
 
 }
 
+// CloseSerial implements quit port operation loop
+func CloseSerial() {
+	Operate.Cmd = QUITprogram //Operate may be overwirte by websocket onmessage
+}
+
 // RunSerial implements all the serial operate
 func RunSerial() {
 	var exChangeData ExChange
 	op := &Operate
 FOR:
 	for {
-		if op.Cmd == WRITEport {
-			fmt.Println("i'm writing!")
-		}
 		switch op.Cmd {
 		case QUITprogram:
 			for portName := range Sers.Ports {
@@ -125,38 +141,64 @@ FOR:
 		case GETdevice:
 			exChangeData.Cmd = GETdevice
 			exChangeData.Msg = getDevice()
+			exChangeData.Target = EVERYone
+			exChangeData.Source = EVERYone
 			Clients.Broadcast(exChangeData)
 			op.Cmd = DEFAULT
 		case OPENport:
+			Lock.Lock()
 			var msg = OK
-			if _, ok := Sers.Ports[op.Target]; !ok {
-				err := Sers.Add(op.Target)
+			if port, ok := Sers.Ports[op.Target]; !ok {
+				err := Sers.Add(op.Target, op.Source)
 				if err != nil {
 					msg = NOK
 					fmt.Println("Failed to open port ", op.Target)
+				}
+			} else {
+				if _, ok := Clients.Users[port.Owner]; !ok {
+					port.Owner = op.Source
+					msg = OWNER
 				}
 			}
 			exChangeData.Cmd = OPENport
 			exChangeData.Msg = msg
 			exChangeData.Target = op.Target
+			exChangeData.Source = op.Source
 			Clients.Broadcast(exChangeData)
 			op.Cmd = READport
+			Lock.Unlock()
 		case CLOSEport:
+			Lock.Lock()
 			Sers.Delete(op.Target)
 			exChangeData.Cmd = CLOSEport
 			exChangeData.Target = op.Target
 			Clients.Broadcast(exChangeData)
 			op.Cmd = READport
+			Lock.Unlock()
 		case WRITEport:
-			fmt.Println("i'm writing: ", op.Target)
+			Lock.Lock()
+			var m string
 			port := Sers.Ports[op.Target]
-			if msg, ok := op.Msg.(string); ok {
-				err := port.WriteStr(msg)
-				if err != nil {
-					fmt.Println("Failed to write to port ", op.Target)
+			if op.Source != port.Owner {
+				m = READonly
+			} else {
+				if msg, ok := op.Msg.(string); ok {
+					err := port.WriteStr(msg)
+					m = OK
+					if err != nil {
+						m = NOK
+						fmt.Println("Failed to write to port ", op.Target)
+					}
 				}
 			}
+			exChangeData.Cmd = WRITEport
+			exChangeData.Msg = m
+			exChangeData.Target = op.Target
+			exChangeData.Source = op.Source
+
+			Clients.Broadcast(exChangeData)
 			op.Cmd = READport
+			Lock.Unlock()
 		case READport:
 			for _, port := range Sers.Ports {
 				data, err := port.ReadStr()
@@ -167,13 +209,12 @@ FOR:
 						exChangeData.Cmd = READport
 						exChangeData.Msg = data
 						exChangeData.Target = port.Config.Name
+						exChangeData.Source = EVERYone
 						Clients.Broadcast(exChangeData)
-						fmt.Println(data)
 					}
 				}
 			}
 		default:
-			// fmt.Println("i'm default")
 			// To do
 		}
 		time.Sleep(time.Millisecond * 20)

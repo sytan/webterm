@@ -26,7 +26,7 @@
         </div>
 
           <div class="input-group">
-              <span class="input-group-addon" id = "addon" onclick="addonSwitch()">NULL</span>
+              <span class="input-group-addon" id = "addon" onclick="addonSwitch()">LF</span>
               <input type="text" class="form-control" placeholder="command" id="input" onkeydown= "onEnter(event)">
             <div class="input-group-btn">
               <!-- Button and dropdown menu -->

@@ -45,7 +45,13 @@ func (cs *clientInfor) Delete(remoteAddr string) {
 // Broadcast implements broadcast information
 func (cs *clientInfor) Broadcast(exChangeData ExChange) {
 	exChangeJSON, _ := json.Marshal(exChangeData)
-	for _, conn := range Clients.Users {
+	source := exChangeData.Source
+	if source != EVERYone && source != "" {
+		conn := Clients.Users[source]
 		conn.WriteJSON(string(exChangeJSON))
+	} else {
+		for _, conn := range Clients.Users {
+			conn.WriteJSON(string(exChangeJSON))
+		}
 	}
 }
